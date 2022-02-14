@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Vs code
+.vscode
+
+# Audio and text folders
+audio
+transcripts
