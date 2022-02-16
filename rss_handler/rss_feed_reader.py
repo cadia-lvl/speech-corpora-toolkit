@@ -4,6 +4,7 @@ import requests
 import vlc
 
 from source_handler.handler import SourceHandler
+from utilities.utilities import seconds_to_hours_mins
 from tqdm import tqdm
 
 
@@ -61,10 +62,12 @@ def main():
     length = 0
     for url in rss_urls:
         audioLength = get_series_length(url)
+        hours, mins = seconds_to_hours_mins(audioLength)
+        print(f"Length: {hours} hours and {mins} minutes")
         length += audioLength
-        print(f"Length: {length/60/60} hours")
 
-    print(f"Total length: {length/60/60} hours")
+    hours, mins = seconds_to_hours_mins(length)
+    print(f"Total length: {hours} hours and {mins} minutes")
 
 
 if __name__ == "__main__":
