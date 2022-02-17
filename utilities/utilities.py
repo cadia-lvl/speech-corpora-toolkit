@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 """
-    This module will contains small helper functions that can be useful for other modules
+    This module will contains small helper functions that can be useful for
+    other modules.
 
-    seconds_to_hours_mins: Takes in seconds and outputs whole hours and whole minutes in a tuple
+    seconds_to_hours_mins(seconds) -> (hours, mins):
+    Takes in seconds and outputs whole hours and whole minutes in a tuple
 
     EXTEND AS FUNCTIONALITY IS EXTENDED
 """

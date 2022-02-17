@@ -15,7 +15,6 @@ ___license___ = "Apache 2.0"
 ___copyright___ = "2022 Staffan Hedström Reykjavík University"
 
 
-import os
 from bs4 import BeautifulSoup
 import requests
 import ffmpeg

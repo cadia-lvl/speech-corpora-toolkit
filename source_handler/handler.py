@@ -5,7 +5,7 @@
     handling a sources json and outputting wished for information.
 
     Example:
-    
+
     source_handler = SourceHandler(filepath)
     urls = source_handler.get_rss_urls()
 
