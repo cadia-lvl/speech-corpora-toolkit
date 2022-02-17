@@ -1,0 +1,29 @@
+{
+  "last_updated": "2022-02-14",
+  "sources": [
+    {
+      "name": "Hringsol skaldsaga",
+      "rss_feed": "https://www.ruv.is/rss/hladvarp/hringsol",
+      "broadcast_method": "Radio",
+      "script": true,
+      "text_dir": "",
+      "video_dir": "",
+      "audio_dir": "",
+      "text_format": "",
+      "podcast": "",
+      "usable_script": false
+    },
+    {
+      "name": "Í ljósi sögunnar",
+      "rss_feed": "https://www.ruv.is/rss/hladvarp/i-ljosi-sogunnar",
+      "broadcast_method": "Radio",
+      "script": true,
+      "text_dir": "",
+      "video_dir": "",
+      "audio_dir": "",
+      "text_format": "",
+      "podcast": "",
+      "usable_script": false
+    }
+  ]
+}
