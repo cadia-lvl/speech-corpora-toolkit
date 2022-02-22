@@ -1,0 +1,4 @@
+# This file keeps the folder structure, but ignores all test_outputs
+*
+*/
+!.gitignore
