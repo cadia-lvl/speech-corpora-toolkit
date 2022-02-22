@@ -53,6 +53,16 @@ class SourceHandler:
 
         return urls
 
+    def get_rss_feeds(self) -> dict:
+        feeds = {}
+
+        for source in self.sources:
+            name = source[Headers.NAME]
+            url = source[Headers.RSS_URL]
+            feeds[name] = url
+
+        return feeds
+
 
 def main():
     path = "test_data.json"
