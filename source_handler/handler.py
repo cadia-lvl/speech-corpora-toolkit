@@ -1,3 +1,23 @@
+#!/usr/bin/env python3
+
+"""
+    This module contains the SourceHandler class. The class is responsible for
+    handling a sources json and outputting wished for information.
+
+    Example:
+
+    source_handler = SourceHandler(filepath)
+    urls = source_handler.get_rss_urls()
+
+    # urls contains a list with the rss feed url for each source
+
+    EXTEND AS FUNCTIONALITY IS EXTENDED
+"""
+
+___author___ = "Staffan Hedström"
+___license___ = "Apache 2.0"
+___copyright___ = "2022 Staffan Hedström Reykjavík University"
+
 import json
 
 
