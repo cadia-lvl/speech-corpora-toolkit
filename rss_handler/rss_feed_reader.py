@@ -99,11 +99,14 @@ def main():
     rss_handler = RSSFeedsHandler(rss_feeds)
 
     length = rss_handler.get_total_length(print_feed_lengths=True)
-    print(f"Total length in seconds: {length}")
+    hours, mins = seconds_to_hours_mins(length)
+    print(f"Total: {hours} hours and {mins} minutes")
 
+    # Test for individual feed
     name = "Í ljósi sögunnar"
     individual_length = rss_handler.get_length_of_feed(name)
-    print(f"{name}: {individual_length} seconds")
+    hours, mins = seconds_to_hours_mins(individual_length)
+    print(f"{name}: {hours} hours and {mins} minutes")
 
 
 if __name__ == "__main__":
