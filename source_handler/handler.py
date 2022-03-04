@@ -19,6 +19,7 @@ ___license___ = "Apache 2.0"
 ___copyright___ = "2022 Staffan Hedström Reykjavík University"
 
 import json
+from utilities.utilities import standardize_string
 
 
 class Headers(object):
@@ -26,6 +27,21 @@ class Headers(object):
     LAST_UPDATED = "last_updated"
     NAME = "name"
     RSS_URL = "rss_feed"
+    TEXT_DIR = "text_dir"
+    AUDIO_DIR = "audio_dir"
+    MAPPING_FILE = "mapping_file"
+
+
+class Source:
+    def __init__(
+        self, name, text_dir=None, audio_dir=None, rss_feed_url=None, mapping_file=None
+    ) -> None:
+        self.name = name
+        self.name_ascii = standardize_string(name)
+        self.text_dir = text_dir
+        self.audio_path = audio_dir
+        self.rss_feed_url = rss_feed_url
+        self.mapping_file = mapping_file
 
 
 class SourceHandler:
@@ -42,6 +58,14 @@ class SourceHandler:
 
         for source in self.sources:
             names.append(source[Headers.NAME])
+
+        return names
+
+    def get_source_names_ascii(self):
+        names = []
+
+        for source in self.sources:
+            names.append(standardize_string(source[Headers.NAME]))
 
         return names
 
@@ -62,6 +86,26 @@ class SourceHandler:
             feeds[name] = url
 
         return feeds
+
+    def get_sources(self) -> list:
+        s = []
+        for source in self.sources:
+            name = source[Headers.NAME]
+            url = source[Headers.RSS_URL]
+            text_dir = source[Headers.TEXT_DIR]
+            audio_dir = source[Headers.AUDIO_DIR]
+            mapping_file = source[Headers.MAPPING_FILE]
+            s.append(
+                Source(
+                    name=name,
+                    text_dir=text_dir,
+                    audio_dir=audio_dir,
+                    rss_feed_url=url,
+                    mapping_file=mapping_file,
+                )
+            )
+
+        return s
 
 
 def main():
