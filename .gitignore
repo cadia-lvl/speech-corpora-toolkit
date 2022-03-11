@@ -134,3 +134,6 @@ dmypy.json
 # Audio and text folders
 audio
 transcripts
+
+# Testing outputs
+output

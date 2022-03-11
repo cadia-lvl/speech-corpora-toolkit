@@ -7,12 +7,12 @@
     contains necessary information like
     audio_dir
     text_dir
-    mappings_dir
+    mappings_file
     name
 
     Functionality:
     run
-    python main.py -i input.json -o output_folder -ca
+    python run.py -i input.json -o output_folder -ca
 
     this will for each source in input.json
 
@@ -40,6 +40,8 @@ import logging
 import argparse
 import pandas as pd
 from pathlib import Path
+import shutil
+from tqdm import tqdm
 
 
 def generate_folder_structure(source_names: list, destination) -> None:
@@ -57,7 +59,7 @@ def generate_folder_structure(source_names: list, destination) -> None:
             |___text/
         ...
     """
-    for name in source_names:
+    for name in tqdm(source_names, "Generating folders"):
         path = os.path.join(destination, name)
         audio_path = os.path.join(path, "audio")
         text_path = os.path.join(path, "text")
@@ -77,22 +79,32 @@ def generate_txt_files(sources: list, destination) -> None:
     reader = DocumentReader()
 
     for source in sources:
-        if isinstance(source, Source):
-            if not os.path.exists(source.text_dir):
-                logging.error(
-                    f"Audio path for {source.name_ascii} \
-                        cannot be found: '{source.text_dir}' \
-                        skipping..."
-                )
-                continue
-            text_dest_folder = os.path.join(destination, source.name_ascii, "text")
-            for root, dirs, files in os.walk(source.text_dir):
-                for file in files:
+        if not isinstance(source, Source):
+            continue
+        if not os.path.exists(source.text_dir):
+            logging.error(
+                f"Audio path for {source.name_ascii} \
+                    cannot be found: '{source.text_dir}' \
+                    skipping..."
+            )
+            continue
+        mapping_file = Path(destination, source.name_ascii, "mapping.tsv")
+        if not mapping_file.exists():
+            logging.error(
+                f"Cannot find the matching mapping file for source: {source.name_ascii}"
+            )
+            continue
+
+        mapping = pd.read_csv(mapping_file, sep="\t")
+        text_dest_folder = os.path.join(destination, source.name_ascii, "text")
+        for root, dirs, files in os.walk(source.text_dir):
+            for file in tqdm(files, f"Converting documents for {source.name_ascii}"):
+                if file in mapping.text.values:
                     reader.read(os.path.join(root, file))
                     reader.save(os.path.join(text_dest_folder, file))
 
 
-def generate_audio(sources: list, destination, copy=False) -> None:
+def generate_audio(sources: list, destination, copy=False, wave=False) -> None:
     """
     Generates audio symlinks into the destination path for each source.
 
@@ -100,6 +112,7 @@ def generate_audio(sources: list, destination, copy=False) -> None:
     creates a symlink in the destination / source_name / audio folder.
 
     This relies on that the folder structure has already been created.
+    This also relies on that the matching mappings file has been generated.
     """
     for source in sources:
         if isinstance(source, Source):
@@ -108,22 +121,26 @@ def generate_audio(sources: list, destination, copy=False) -> None:
                     f"Audio path for {source.name_ascii} \
                         cannot be found: '{source.audio_path}'"
                 )
+                continue
+            mapping = pd.read_csv(
+                Path(destination, source.name_ascii, "mapping.tsv"), sep="\t"
+            )
             audio_folder = os.path.join(destination, source.name_ascii, "audio")
             for root, dirs, files in os.walk(source.audio_path):
                 logging.info(f"Found {len(files)} audio files for {source.name_ascii}")
-                for file in files:
+                for file in tqdm(files, f"Generating audio for: {source.name_ascii}"):
+                    # If file not in the matching mapping file, then skip it
+                    if file not in mapping.audio.values:
+                        continue
                     try:
-                        if copy:
+                        if copy and wave:
                             copy_and_convert_to_wav(
                                 os.path.join(root, file),
                                 os.path.join(audio_folder, file),
                             )
+                        elif copy:
+                            shutil.copy(Path(root, file), Path(audio_folder, file))
                         else:  # else create symlinks to save space
-                            if ".wav" not in file:
-                                logging.warn(
-                                    "The audio is not in .wav format. \
-                                    Continue with care or run with -ca command."
-                                )
                             os.symlink(
                                 os.path.join(root, file),
                                 os.path.join(audio_folder, file),
@@ -135,6 +152,35 @@ def generate_audio(sources: list, destination, copy=False) -> None:
                         )
 
 
+def make_matching_maps(sources: list, destination: str) -> None:
+    for source in tqdm(sources, "Making mapping files."):
+        if not isinstance(source, Source) or not Path(source.mapping_file).exists:
+            logging.error(
+                f"Cannot find the mapping file: {source.mapping_file} for {source}"
+            )
+            continue
+
+        mapping = pd.read_csv(source.mapping_file, sep="\t")
+        audio_files = os.listdir(source.audio_path)
+        text_files = os.listdir(source.text_dir)
+
+        matching_audio = []
+        matching_text = []
+
+        for row in mapping.iterrows():
+            if row[1].text in text_files and row[1].audio in audio_files:
+                matching_audio.append(row[1].audio)
+                matching_text.append(row[1].text)
+
+        matching_mapping = pd.DataFrame()
+        matching_mapping["text"] = matching_text
+        matching_mapping["audio"] = matching_audio
+
+        matching_mapping.to_csv(
+            Path(destination, source.name_ascii, "mapping.tsv"), sep="\t", index=False
+        )
+
+
 def __format_audio_mapping(path: str) -> str:
     return str(Path("audio") / Path(path).name)
 
@@ -144,14 +190,19 @@ def __format_text_mapping(path: str) -> str:
 
 
 def map_and_standardize_filenames(sources: list, destination) -> None:
-    for source in sources:
-        if isinstance(source, Source):
-            if not os.path.exists(source.mapping_file):
-                logging.error(
-                    f"Cannot find the mapping file: {source.mapping_file} for {source}"
-                )
-                continue
-        mapping = pd.read_csv(source.mapping_file, sep="\t")
+    for source in tqdm(sources, "Standardizing filenames."):
+        if not isinstance(source, Source):
+            logging.error(f"Cannot read source: {source}")
+            continue
+        mapping_path = Path(destination, source.name_ascii, "mapping.tsv")
+        if not mapping_path.exists():
+            logging.error(f"Cannot find the mapping file: {mapping_path} for {source}")
+            continue
+        mapping = pd.read_csv(mapping_path, sep="\t")
+
+        # Keep original file names
+        mapping["original_text_name"] = mapping.text
+        mapping["original_audio_name"] = mapping.audio
 
         mapping.audio = mapping.audio.apply(__format_audio_mapping)
         mapping.text = mapping.text.apply(__format_text_mapping)
@@ -159,7 +210,9 @@ def map_and_standardize_filenames(sources: list, destination) -> None:
         mapping = standardize_files(mapping, destination, source.name_ascii)
 
         # Check if file exists?
-        mapping.to_csv(Path(destination, source.name_ascii, "mapping.tsv"), sep="\t")
+        mapping.to_csv(
+            Path(destination, source.name_ascii, "mapping.tsv"), sep="\t", index=False
+        )
 
 
 def standardize_files(
@@ -170,7 +223,7 @@ def standardize_files(
     source_name_000XX.txt
     source_name_000XX.wav
 
-    Uses the data in the mapping_dataframe to rename the files sp
+    Uses the data in the mapping_dataframe to rename the files so
     that the audio file and matching text file have matching names.
     """
     audio_new_files = []
@@ -181,9 +234,10 @@ def standardize_files(
 
     for row in mapping_dataframe.iterrows():
         file_number = row[0] + 1
-        audio = f"{Path(row[1].audio).stem}.wav"
+        audio = f"{Path(row[1].audio).name}"
+        audio_format = Path(row[1].audio).suffix
         text = f"{Path(row[1].text).stem}.txt"
-        audio_new_name = f"{source_name}_{str(file_number).zfill(6)}.wav"
+        audio_new_name = f"{source_name}_{str(file_number).zfill(6)}{audio_format}"
         text_new_name = f"{source_name}_{str(file_number).zfill(6)}.txt"
 
         os.rename(Path(audio_folder, audio), Path(audio_folder, audio_new_name))
@@ -192,8 +246,8 @@ def standardize_files(
         audio_new_files.append(audio_new_name)
         text_new_files.append(text_new_name)
 
-    mapping_dataframe.audio = audio_new_files
     mapping_dataframe.text = text_new_files
+    mapping_dataframe.audio = audio_new_files
 
     return mapping_dataframe
 
@@ -240,8 +294,16 @@ def main():
         "-ca",
         "--copy_audio",
         required=False,
-        help="Use this flag to convert the audio to .wav and copy it to the output folder. \
+        help="Use this flag to copy the audio to the output folder. \
             Will take precedence over generate audio symlinks.",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "-wave",
+        "--convert_to_wave",
+        required=False,
+        help="Use this flag to convert the audio to wave format.",
         action="store_true",
     )
 
@@ -272,21 +334,28 @@ def main():
     sources = source_handler.get_sources()
     sources_names = source_handler.get_source_names_ascii()
 
+    # Step 1 generate folder structure unless instructed to not to
+    # Skip if already generated for all sources
     if not args.skip_folder_structure:
         generate_folder_structure(sources_names, output)
 
-    if args.copy_audio:
-        generate_audio(sources, output, copy=True)
+    # Step 2 Generate the matching maps file
+    # In case of some audio file not matching some text file or vise verse
+    # Make a matching mapping file for each source
+    make_matching_maps(sources, output)
+
+    # Step 3 Copy/Generate symlinks to audio files
+    if args.copy_audio or args.convert_to_wave:
+        generate_audio(sources, output, copy=True, wave=args.convert_to_wave)
 
     elif args.generate_audio_symlinks:
         generate_audio(sources, output)
 
+    # Step 4 Generate the text files from documents
     if not args.skip_convert_documents:
         generate_txt_files(sources, output)
 
-    # Mapping has to be done before
-    # This should only generate a new mapping file with new file names and file
-    # extensions
+    # Step 5 Standardize file names in and outside of mappings file
     if not args.skip_mapping:
         map_and_standardize_filenames(sources, output)
 
