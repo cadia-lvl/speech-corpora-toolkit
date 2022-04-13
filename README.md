@@ -65,7 +65,7 @@ The document handler is responsible for converting different types of text docum
 
 This could be extended in the future to include trim tags. Tags that would indicate that that text should be removed from the output text.
 
-So for it supports conversion to txt from:
+So far it supports conversion to txt from:
 
 - pdf
 - doc
@@ -74,7 +74,7 @@ So for it supports conversion to txt from:
 
 ## rss_handler
 
-The rss handler handles all things to do with rss feeds. Like downloading audio files, estimating source lengths and so forth.
+The rss handler handles all things to do with rss feeds. For example, downloading audio files, estimating source lengths and so forth.
 
 # Running the pre-processing
 
@@ -89,9 +89,9 @@ This will:
 - Generate the standardized folder structure for each source
 - Generate symbolic links for all audio
 - Convert all text files into .txt
-- Standardize all filenames and generate mapping file
+- Standardize all filenames and generate a mapping file
 
-There some options. It is possible to create symbolic links instead of copying the audio files. Creating .wav files in the output folder and more. For a list of options run.
+There are some options. It is possible to create symbolic links instead of copying the audio files, to create .wav files in the output folder and more. For a list of options run:
 
 ```python
 python run.py -h
