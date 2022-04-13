@@ -65,7 +65,7 @@ The document handler is responsible for converting different types of text docum
 
 This could be extended in the future to include trim tags. Tags that would indicate that that text should be removed from the output text.
 
-So for it supports conversion to txt from:
+So far it supports conversion to txt from:
 
 - pdf
 - doc
