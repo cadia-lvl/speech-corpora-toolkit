@@ -92,16 +92,28 @@ class SourceHandler:
         if not source.name:
             logging.warning("Source is missing name. Skipping")
             return False
-        if not source.url: 
-            logging.warning(f"Source: '{source.name}' is missing url. This is ok as long as you are not downloading the sources.")
-        if not source.audio_path: 
-            logging.warning(f"Source: '{source.name}' is missing audio dir path. Skipping this source...")
+        if not source.url:
+            logging.warning(
+                f"Source: '{source.name}' is missing url. \
+                This is ok as long as you are not downloading the sources."
+            )
+        if not source.audio_path:
+            logging.warning(
+                f"Source: '{source.name}' is missing audio dir path. \
+                    Skipping this source..."
+            )
             return False
         if not source.text_dir:
-            logging.warning(f"Source: '{source.name}' is missing text dir path. Skipping this source...")
+            logging.warning(
+                f"Source: '{source.name}' is missing text dir path. \
+                     Skipping this source..."
+            )
             return False
         if not source.mapping_file:
-            logging.warning(f"Source '{source.name}' is missing a mapping file. Skipping this source...")
+            logging.warning(
+                f"Source '{source.name}' is missing a mapping file. \
+                    Skipping this source..."
+            )
             return False
 
         return True
@@ -116,12 +128,12 @@ class SourceHandler:
             mapping_file = source[Headers.MAPPING_FILE]
 
             source_to_add = Source(
-                    name=name,
-                    text_dir=text_dir,
-                    audio_dir=audio_dir,
-                    rss_feed_url=url,
-                    mapping_file=mapping_file,
-                )
+                name=name,
+                text_dir=text_dir,
+                audio_dir=audio_dir,
+                rss_feed_url=url,
+                mapping_file=mapping_file,
+            )
 
             # Validate each source before adding
             if self.valid_source(source_to_add):
