@@ -7,7 +7,8 @@
       "text_dir": "",
       "text_format": "",
       "audio_dir": "",
-      "mapping_file": ""
+      "mapping_file": "",
+      "score": ""
     },
     {
       "name": "Source name 2",
@@ -15,7 +16,8 @@
       "text_dir": "",
       "text_format": "",
       "audio_dir": "",
-      "mapping_file": ""
+      "mapping_file": "",
+      "score": ""
     }
   ]
 }
