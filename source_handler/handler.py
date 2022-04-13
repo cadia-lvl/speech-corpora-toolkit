@@ -20,6 +20,7 @@ ___copyright___ = "2022 Staffan Hedström Reykjavík University"
 
 import json
 from utilities.utilities import standardize_string
+import logging
 
 
 class Headers(object):
@@ -87,6 +88,24 @@ class SourceHandler:
 
         return feeds
 
+    def valid_source(self, source: Source) -> bool:
+        if not source.name:
+            logging.warning("Source is missing name. Skipping")
+            return False
+        if not source.url: 
+            logging.warning(f"Source: '{source.name}' is missing url. This is ok as long as you are not downloading the sources.")
+        if not source.audio_path: 
+            logging.warning(f"Source: '{source.name}' is missing audio dir path. Skipping this source...")
+            return False
+        if not source.text_dir:
+            logging.warning(f"Source: '{source.name}' is missing text dir path. Skipping this source...")
+            return False
+        if not source.mapping_file:
+            logging.warning(f"Source '{source.name}' is missing a mapping file. Skipping this source...")
+            return False
+
+        return True
+
     def get_sources(self) -> list:
         s = []
         for source in self.sources:
@@ -95,15 +114,18 @@ class SourceHandler:
             text_dir = source[Headers.TEXT_DIR]
             audio_dir = source[Headers.AUDIO_DIR]
             mapping_file = source[Headers.MAPPING_FILE]
-            s.append(
-                Source(
+
+            source_to_add = Source(
                     name=name,
                     text_dir=text_dir,
                     audio_dir=audio_dir,
                     rss_feed_url=url,
                     mapping_file=mapping_file,
                 )
-            )
+
+            # Validate each source before adding
+            if self.valid_source(source_to_add):
+                s.append(source_to_add)
 
         return s
 
