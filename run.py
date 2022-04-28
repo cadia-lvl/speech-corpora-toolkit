@@ -316,11 +316,7 @@ def main():
     )
 
     parser.add_argument(
-        "-i",
-        "--input_source_json",
-        required=False,
-        help="Path to the source.json file.",
-        default="test_data.json",
+        "-i", "--input_source_json", required=True, help="Path to the source.json file."
     )
 
     args = parser.parse_args()
