@@ -12,15 +12,16 @@
 
     Functionality:
     run
-    python run.py -i input.json -o output_folder -ca
+    python run.py -i input.json -o output_folder -wave
 
     this will for each source in input.json
 
     1. Generate the folder structure in the output folder,
         see "generate_folder_structure" for details
     2.
-        a) -ca -> Convert audio to .wav and copy to output folder
+        a) -wave -> Convert audio to .wav and copy to output folder
         b) -gas -> Generate audio symlinks in the audio folder for the source
+        c) -ca -> Copy the audio files to the output folder
     3. Convert text documents to .txt files
         and put them into the text folder for the source
     4. Generate a new mappings.tsv file
