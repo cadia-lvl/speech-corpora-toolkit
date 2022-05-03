@@ -92,9 +92,9 @@ class SourceHandler:
         if not source.name:
             logging.warning("Source is missing name. Skipping")
             return False
-        if not source.url:
+        if not source.rss_feed_url:
             logging.warning(
-                f"Source: '{source.name}' is missing url. \
+                f"Source: '{source.name}' is missing a rss feed url. \
                 This is ok as long as you are not downloading the sources."
             )
         if not source.audio_path:
