@@ -60,16 +60,25 @@ class DocumentReader:
         return "Unknown format. Known formats are .pdf and .pptx"
 
     def save(self, output_path) -> bool:
+        # Clean output_path
+        output_txt = self.to_txt_path(output_path)
+
         try:
-            with open(output_path, "w") as f:
+            with open(output_txt, "w") as f:
                 f.writelines(self.text)
             return True
         except IOError:
             print(
                 "An error occurred while creating or writing to the file: \
-                    {output_path}"
+                    {output_txt}"
             )
             return False
+
+    def to_txt_path(self, path):
+        """Makes a path end with .txt"""
+        output = path.split(".")
+        output[-1] = "txt"
+        return ".".join(output)
 
 
 def main():
