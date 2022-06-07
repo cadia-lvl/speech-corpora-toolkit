@@ -21,6 +21,7 @@ ___copyright___ = "2022 Staffan Hedström Reykjavík University"
 
 from pptx import Presentation
 import pdfplumber
+from docx import Document
 
 
 class DocumentReader:
@@ -52,12 +53,21 @@ class DocumentReader:
         self.text = text
         return text
 
+    def text_from_docx(self, filepath) -> list:
+        text = []
+        docx = Document(filepath)
+        for p in docx.paragraphs:
+            text.append(" ".join(p.text.split()))  # fixes a few whitespace issues
+        return text
+
     def read(self, filepath) -> list:
         if ".pptx" in filepath:
             return self.text_from_presentation(filepath)
         if ".pdf" in filepath:
             return self.text_from_pdf(filepath)
-        return "Unknown format. Known formats are .pdf and .pptx"
+        if ".docx" in filepath or ".doc" in filepath:
+            return self.text_from_docx(filepath)
+        return "Unknown format. Known formats are ['.pdf','.pptx', '.docx', '.doc']"
 
     def save(self, output_path) -> bool:
         # Clean output_path
