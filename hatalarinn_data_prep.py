@@ -26,20 +26,20 @@ def main():
     """
         Write code here
         TODO: map text to audio files
-              assume.txt files for hatalarinn are actually .doc files OR change .txt to .doc
+              assume.txt files for hatalarinn are actually .rtf files OR change
+              .txt to .rtf
               extract the text
     """
-    # cat ruv_unprocessed/airdate2title2media.csv | grep 'Hátalarinn' but in
-    # python
-    # TODO: put in the json file
-    orig_mapping_file = '/data/misc/ruv_unprocessed/airdate2title2media.csv'
-    with open(original_mapping_file, 'w') as airdate:
-        file_contents = airdate.read()
-        # TODO if line has show name then keep, otherwise do nothing
-        # TODO: put show name in json
+    original_mapping_file = '/data/misc/ruv_unprocessed/airdate2title2media.csv'
+    with open(original_mapping_file, 'r') as airdate:
         show_name = 'Hátalarinn'
+        # If line has show name then keep
+        hatalarinn_lines = [line for line in airdate if show_name in line]
+        print(hatalarinn_lines)
+        print(len(hatalarinn_lines))
 
-    print()
+    # TODO: get list of script files
+        # TODO: put show name in json
 
 
 if __name__ == '__main__':
