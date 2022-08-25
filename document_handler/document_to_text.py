@@ -125,7 +125,7 @@ class DocumentReader:
         Checks if a trim item is a command.
         Returns the command if it is or empty string if not.
         """
-        command = re.search("\+{3}(.*)\+{3}", trim)
+        command = re.search(r"\+{3}(.*)\+{3}", trim)
         if command is None:
             return ""
         return command.group(1)
@@ -176,7 +176,7 @@ class DocumentReader:
         # Make it all into one string
         output = " ".join(text)
         # Split on "." to find sentences
-        output = re.split("\. ", output)
+        output = re.split(r"\. ", output)
         output = [x + "." for x in output]
         # If last line has a dot, an additional one will be added
         output[-1] = output[-1].replace("..", ".")
