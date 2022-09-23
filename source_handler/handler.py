@@ -31,11 +31,18 @@ class Headers(object):
     TEXT_DIR = "text_dir"
     AUDIO_DIR = "audio_dir"
     MAPPING_FILE = "mapping_file"
+    TRIM_LIST = "trim_list"
 
 
 class Source:
     def __init__(
-        self, name, text_dir=None, audio_dir=None, rss_feed_url=None, mapping_file=None
+        self,
+        name,
+        text_dir=None,
+        audio_dir=None,
+        rss_feed_url=None,
+        mapping_file=None,
+        trim_list=None,
     ) -> None:
         self.name = name
         self.name_ascii = standardize_string(name)
@@ -43,6 +50,7 @@ class Source:
         self.audio_path = audio_dir
         self.rss_feed_url = rss_feed_url
         self.mapping_file = mapping_file
+        self.trim_list = trim_list
 
 
 class SourceHandler:
@@ -126,6 +134,7 @@ class SourceHandler:
             text_dir = source[Headers.TEXT_DIR]
             audio_dir = source[Headers.AUDIO_DIR]
             mapping_file = source[Headers.MAPPING_FILE]
+            trim_list = source[Headers.TRIM_LIST]
 
             source_to_add = Source(
                 name=name,
@@ -133,6 +142,7 @@ class SourceHandler:
                 audio_dir=audio_dir,
                 rss_feed_url=url,
                 mapping_file=mapping_file,
+                trim_list=trim_list,
             )
 
             # Validate each source before adding
