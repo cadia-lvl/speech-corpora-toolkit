@@ -229,6 +229,7 @@ def standardize_files(
     """
     audio_new_files = []
     text_new_files = []
+    text_guest_files = []
 
     audio_folder = Path(destination, source_name, "audio")
     text_folder = Path(destination, source_name, "text")
@@ -242,17 +243,27 @@ def standardize_files(
             audio = audio.replace(audio_format, ".wav")
             audio_format = ".wav"
         text = f"{Path(row[1].text).stem}.txt"
-        audio_new_name = f"{source_name}_{str(file_number).zfill(6)}{audio_format}"
-        text_new_name = f"{source_name}_{str(file_number).zfill(6)}.txt"
+        audio_new_name = f"{source_name}_{str(file_number).zfill(3)}{audio_format}"
+        text_new_name = f"{source_name}_{str(file_number).zfill(3)}.txt"
 
         os.rename(Path(audio_folder, audio), Path(audio_folder, audio_new_name))
         os.rename(Path(text_folder, text), Path(text_folder, text_new_name))
+
+        # ALso rename potential guest file
+        guest_file = Path(str(Path(text_folder, text)).replace(".txt", ".guest"))
+        if guest_file.exists():
+            new_guest_file_name = text_new_name.replace(".txt", ".guest")
+            os.rename(guest_file, Path(text_folder, new_guest_file_name))
+            text_guest_files.append(new_guest_file_name)
+        else:
+            text_guest_files.append("")
 
         audio_new_files.append(audio_new_name)
         text_new_files.append(text_new_name)
 
     mapping_dataframe.text = text_new_files
     mapping_dataframe.audio = audio_new_files
+    mapping_dataframe["guest"] = text_guest_files
 
     return mapping_dataframe
 
@@ -276,7 +287,7 @@ def main():
         required=False,
         help="Use this flag to generate audio symlinks. Only use this if you know the \
             audio has the correct format already.",
-        action="store_false",
+        action="store_true",
     )
 
     parser.add_argument(
