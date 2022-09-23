@@ -26,6 +26,8 @@ import ffmpeg
 from source_handler.handler import SourceHandler
 from utilities.utilities import seconds_to_hours_mins
 from tqdm import tqdm
+from pathlib import Path
+from datetime import datetime
 
 
 class RSSFeedsHandler:
@@ -87,6 +89,42 @@ class RSSFeedsHandler:
             total_length_seconds += int(duration)
 
         return total_length_seconds
+
+    def __get_episodes(self, url) -> list:
+        r = requests.get(url)
+        soup = BeautifulSoup(r.content, "lxml")
+        episodes = []
+        strp = "%a, %d %b %Y %H:%M:%S +%f"
+        strp2 = "%a, %d %b %Y %H:%M:%S %Z"
+
+        for item in soup.find_all("item"):
+            if item.guid.attrs.get("ispermalink") == "false":
+                audio_url = item.enclosure.attrs.get("url")
+            else:
+                audio_url = item.guid.string
+            title = item.title.string
+            date = item.pubdate.string
+            try:
+                d = datetime.strptime(date, strp)
+            except ValueError:
+                d = datetime.strptime(date, strp2)
+            episode_name = (
+                f"{d.year}.{str(d.month).zfill(2)}.{str(d.day).zfill(2)}_{title}"
+            )
+            episodes.append({"name": episode_name.replace("/", ""), "url": audio_url})
+        return episodes
+
+    def download_source_audio(self, source, output_path):
+        url = self.feeds[source]
+        episodes = self.__get_episodes(url)
+
+        for episode in tqdm(episodes):
+            path = Path(output_path, episode["name"] + ".mp3")
+            if path.exists():
+                continue
+            r = requests.get(episode["url"])
+            with open(path, "wb") as f:
+                f.write(r.content)
 
 
 def main():
