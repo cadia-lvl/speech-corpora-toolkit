@@ -25,15 +25,30 @@ from pptx import Presentation
 import pdfplumber
 from docx import Document
 import re
+from pathlib import Path
 
-# Trim commands
+# Trim commands, using input1___input2+++command+++
 REMOVE_TABBED = "tabs"
 REMOVE_WORD = "word"
+REMOVE_FROM_TO = "remove_from_to"
+CONTAINS_MULTIPLE = (
+    "contains_multiple"  # " / ___3" => removes lines containing 3x " / "
+)
+REMOVE_NUMBER = "remove_number"  # "part ___3" -> removes line where "part " is followed by 3 or more numbers
+TIME_TO_TIME = "time_to_time"  # removes 0.00 – 1.34 and similar
+EXACT = "exact"
+SONGS = "songs"
+TO_GUEST = "to_guest"
+ALL_UPPERCASE = "all_uppercase"
+REMOVE_START_TIME = "start_time"
+REMOVE_SPEAKER_IDENTIFIER = "remove_speaker"
+ONLY_NUMBERS = "only_numbers"
 
 
 class DocumentReader:
     def __init__(self) -> None:
         self.text = []
+        self.guest = []
 
     def text_from_presentation(self, filepath) -> list:
         prs = Presentation(filepath)
@@ -68,7 +83,7 @@ class DocumentReader:
         docx = Document(filepath)
         for p in docx.paragraphs:
             line = p.text
-            if line == "":  # Skip empty lines
+            if line == "" and len(text) >= 1 and text[-1] == "":  # Skip empty lines
                 continue
             # Perserve tabs
             try:
@@ -94,11 +109,24 @@ class DocumentReader:
         trimmed_text = []
 
         for line in self.text:
+            if line == "" and len(trimmed_text) >= 1 and trimmed_text[-1] != "":
+                trimmed_text.append(line)
+                continue
             trimmed = self.trim_line(line, trim_list)
             # Skip empty lines
             if trimmed == "":
                 continue
             trimmed_text.append(trimmed)
+
+        for trim_item in trim_list:
+            command = self.is_trim_command(trim_item)
+            if not command == REMOVE_FROM_TO:
+                continue
+            start, end = trim_item.replace(f"+++{command}+++", "").split("___")
+
+        # Lastly remove empty lines
+        trimmed_text = [line for line in trimmed_text if line.strip() != ""]
+        self.guest = [line for line in self.guest if line.strip() != ""]
         self.text = trimmed_text
         return trimmed_text
 
@@ -108,14 +136,79 @@ class DocumentReader:
         """
         for trim_item in trim_list:
             command = self.is_trim_command(trim_item)
+            second_command = None
+            if len(command.split(",")) == 2:
+                command, second_command = command.split(",")
             if command == REMOVE_TABBED:
                 if "\t" in line:
+                    if second_command == TO_GUEST:
+                        self.guest.append(line.strip())
                     return ""
             if command == REMOVE_WORD:
                 word = trim_item.replace(f"+++{command}+++", "")
                 if word in line:
                     trimmed = line.replace(word, "")
                     return " ".join(trimmed.split())
+            if command == REMOVE_NUMBER:
+                word, num_digits = trim_item.replace(f"+++{command}+++", "").split(
+                    "___"
+                )
+                found = re.match("%s\d{%s,}" % (word, num_digits), line.strip())
+                if found:
+                    return ""
+            if command == CONTAINS_MULTIPLE:
+                char, amount = trim_item.replace(f"+++{command}+++", "").split("___")
+                count = line.count(char)
+                if count >= int(amount):
+                    return ""
+            if command == TIME_TO_TIME:
+                found = (
+                    re.search(r"\d+(\:|\.)\d+\s?(–|-)\s?\d+(\:|\.)\d+", line) != None
+                )
+
+                if found:
+                    return ""
+            if command == EXACT:
+                word = trim_item.replace(f"+++{command}+++", "")
+                if line == word:
+                    return ""
+            if command == SONGS:
+                # Numbered songs
+                found = (
+                    re.match(
+                        r"\d{2}\.\s?([A-Za-z\.\&\']+\s)+\s?(-|-)\s?([A-Za-z\.\&\']+\s)+",
+                        line.strip(),
+                    )
+                    != None
+                )
+                if found:
+                    return ""
+            if command == ALL_UPPERCASE:
+                found = re.search(r"^\t?[A-ZÁÐÉÍÓÚÝÞÆÖ \.\:\-\+\,]+$", line)
+                if found:
+                    return ""
+            if command == REMOVE_START_TIME:
+                found = re.match(r"\t?\d+(\.|\:)\d+(\s|$)", line)
+                if found:
+                    res = line.replace(found.group(0), "").strip()
+                    if second_command == TO_GUEST:
+                        self.guest.append(res)
+                        return ""
+                    return res
+            if command == REMOVE_SPEAKER_IDENTIFIER:
+                found = re.match(r"\t*[A-ZÁÐÉÍÓÚÝÞÆÖ]+ ?[A-ZÁÐÉÍÓÚÝÞÆÖ]*\:", line)
+                if found:
+                    res = line.replace(found.group(0), "").strip()
+                    if second_command == TO_GUEST:
+                        self.guest.append(res)
+                        return ""
+                    return res
+
+            if command == ONLY_NUMBERS:
+                found = re.match(r"^[\d\:\,\.\/\\]+$", line.strip())
+                if found:
+                    return ""
+
             if trim_item in line:
                 return ""
         return " ".join(line.split())
@@ -131,11 +224,12 @@ class DocumentReader:
         return command.group(1)
 
     def read(self, filepath: str) -> list:
-        if ".pptx" in filepath:
+        suffix = Path(filepath).suffix
+        if ".pptx" in suffix:
             return self.text_from_presentation(filepath)
-        if ".pdf" in filepath:
+        if ".pdf" in suffix:
             return self.text_from_pdf(filepath)
-        if ".docx" in filepath or ".doc" in filepath:
+        if suffix in [".docx", ".doc", "odt"]:
             return self.text_from_docx(filepath)
         return "Unknown format. Known formats are ['.pdf','.pptx', '.docx', '.doc']"
 
@@ -148,7 +242,16 @@ class DocumentReader:
                 for line in self.text:
                     f.write(line)
                     f.write("\n")
+
+                    # Save guest text if available
+            if len(self.guest) > 0:
+                output_guest = output_txt.replace(".txt", ".guest")
+                with open(output_guest, "w") as f:
+                    for line in self.guest:
+                        f.write(line)
+                        f.write("\n")
             return True
+
         except IOError:
             print(
                 "An error occurred while creating or writing to the file: \
@@ -163,6 +266,7 @@ class DocumentReader:
         return ".".join(output)
 
     def read_and_trim(self, path: str, trim_list: list) -> list:
+        self.guest = []
         text = self.read(path)
         text = self.trim(trim_list)
         # PDFs has odd newline characters, after trimming
